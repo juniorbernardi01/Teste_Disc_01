@@ -110,7 +110,7 @@
         flex-shrink: 0;
     }
 
-    /* Fantasma do card quando segue o dedo */
+    /* Fantasma do card quando segue o dedo no celular */
     .drag-ghost {
         position: fixed;
         z-index: 9999;
@@ -188,18 +188,79 @@
 <script>
 let draggingCard = null;
 let ghost = null;
-let originSlot = null; // se o card veio de um slot, guardamos aqui
 
 const lista = document.getElementById("lista");
-const slots = document.querySelectorAll(".slot");
+const slots = Array.from(document.querySelectorAll(".slot"));
 
-/* ---------------- MOBILE: seguir o dedo ---------------- */
+/* ---------- Helpers de ranking ---------- */
+
+function resetSlotPlaceholder(slot) {
+    const pos = slot.getAttribute("data-pos");
+    const textEl = slot.querySelector(".slot-text");
+    if (!textEl) return;
+    if (pos === "1") textEl.textContent = "O que MAIS se parece com você";
+    else if (pos === "2") textEl.textContent = "O segundo mais parecido";
+    else if (pos === "3") textEl.textContent = "O terceiro mais parecido";
+    else if (pos === "4") textEl.textContent = "O que MENOS se parece com você";
+    textEl.style.display = "inline";
+    slot.classList.remove("filled");
+}
+
+function getCurrentOrder() {
+    const order = [];
+    slots.forEach(slot => {
+        const card = slot.querySelector(".adjetivo-card");
+        if (card) order.push(card);
+    });
+    return order;
+}
+
+function applyOrder(order) {
+    // Devolve todos os cards dos slots pra lista temporariamente
+    slots.forEach(slot => {
+        const card = slot.querySelector(".adjetivo-card");
+        if (card) lista.appendChild(card);
+        resetSlotPlaceholder(slot);
+    });
+
+    // Coloca os cards na ordem nos slots 1..4
+    order.forEach((card, idx) => {
+        if (idx >= slots.length) return;
+        const slot = slots[idx];
+        slot.appendChild(card);
+        slot.classList.add("filled");
+        const textEl = slot.querySelector(".slot-text");
+        if (textEl) textEl.style.display = "none";
+        card.style.display = "flex";
+    });
+}
+
+function insertCardAtIndex(card, targetIndex) {
+    let current = getCurrentOrder();
+    // Remove se já estava no ranking (reordenar)
+    current = current.filter(c => c !== card);
+
+    if (targetIndex < 0) targetIndex = 0;
+    if (targetIndex > current.length) targetIndex = current.length;
+
+    current.splice(targetIndex, 0, card);
+    const finalOrder = current.slice(0, slots.length);
+    applyOrder(finalOrder);
+}
+
+function moveFromRankToList(card) {
+    const current = getCurrentOrder();
+    const newOrder = current.filter(c => c !== card);
+    applyOrder(newOrder);
+    lista.appendChild(card);
+    card.style.display = "flex";
+}
+
+/* ---------- Drag mobile (touch) ---------- */
 
 document.querySelectorAll(".adjetivo-card").forEach(card => {
-
     card.addEventListener("touchstart", e => {
         draggingCard = card;
-        originSlot = card.closest(".slot");
 
         ghost = card.cloneNode(true);
         ghost.classList.add("drag-ghost");
@@ -233,36 +294,32 @@ document.querySelectorAll(".adjetivo-card").forEach(card => {
         const listaDrop = elem ? elem.closest("#lista") : null;
 
         if (slot) {
-            colocarCardNoSlot(slot, draggingCard);
+            const targetIndex = slots.indexOf(slot);
+            insertCardAtIndex(draggingCard, targetIndex);
         } else if (listaDrop) {
-            // soltar na lista -> volta para a lista
-            devolverParaLista(draggingCard);
-        } else {
-            // soltou em qualquer outro lugar, não muda a posição
+            moveFromRankToList(draggingCard);
         }
+        // Se soltar em qualquer outro lugar, não muda a ordem
 
         if (ghost) {
             ghost.remove();
             ghost = null;
         }
         draggingCard = null;
-        originSlot = null;
     });
 });
 
-/* ---------------- DESKTOP: drag & drop padrão ---------------- */
+/* ---------- Drag desktop ---------- */
 
 document.querySelectorAll(".adjetivo-card").forEach(card => {
     card.addEventListener("dragstart", () => {
         draggingCard = card;
-        originSlot = card.closest(".slot");
         setTimeout(() => card.style.opacity = "0.3", 0);
     });
 
     card.addEventListener("dragend", () => {
         if (draggingCard) draggingCard.style.opacity = "1";
         draggingCard = null;
-        originSlot = null;
     });
 });
 
@@ -271,102 +328,23 @@ slots.forEach(slot => {
 
     slot.addEventListener("drop", () => {
         if (!draggingCard) return;
-        colocarCardNoSlot(slot, draggingCard);
+        const targetIndex = slots.indexOf(slot);
+        insertCardAtIndex(draggingCard, targetIndex);
     });
 
-    // Clique no slot para limpar e devolver o adjetivo
+    // Clique no slot devolve o card para a lista
     slot.addEventListener("click", () => {
-        if (slot.querySelector(".adjetivo-card")) {
-            removerDoSlot(slot);
-        }
+        const card = slot.querySelector(".adjetivo-card");
+        if (card) moveFromRankToList(card);
     });
 });
 
-// Permite soltar na lista no desktop
+// Lista aceita soltar card para tirar do ranking
 lista.addEventListener("dragover", e => e.preventDefault());
 lista.addEventListener("drop", () => {
     if (!draggingCard) return;
-    devolverParaLista(draggingCard);
+    moveFromRankToList(draggingCard);
 });
-
-/* ---------------- FUNÇÕES PRINCIPAIS ---------------- */
-
-function colocarCardNoSlot(slot, card) {
-    // Se o card já estava em outro slot, limpa o slot de origem
-    const slotOrigem = originSlot || card.closest(".slot");
-    if (slotOrigem && slotOrigem !== slot) {
-        limparSlot(slotOrigem);
-    }
-
-    // Se o slot alvo já tiver um card, devolve aquele card para a lista
-    const cardExistente = slot.querySelector(".adjetivo-card");
-    if (cardExistente && cardExistente !== card) {
-        devolverParaLista(cardExistente);
-    }
-
-    // Esconde o texto placeholder do slot
-    const textEl = slot.querySelector(".slot-text");
-    if (textEl) textEl.style.display = "none";
-
-    slot.classList.add("filled");
-    slot.dataset.cardId = card.dataset.id;
-
-    card.style.display = "flex";
-    slot.appendChild(card);
-}
-
-function limparSlot(slot) {
-    const card = slot.querySelector(".adjetivo-card");
-    if (card) {
-        // devolve card à lista
-        card.style.display = "flex";
-        lista.appendChild(card);
-    }
-
-    slot.classList.remove("filled");
-    slot.removeAttribute("data-cardId");
-
-    const textEl = slot.querySelector(".slot-text");
-    if (textEl) {
-        const pos = slot.getAttribute("data-pos");
-        if (pos === "1") textEl.textContent = "O que MAIS se parece com você";
-        else if (pos === "2") textEl.textContent = "O segundo mais parecido";
-        else if (pos === "3") textEl.textContent = "O terceiro mais parecido";
-        else if (pos === "4") textEl.textContent = "O que MENOS se parece com você";
-        textEl.style.display = "inline";
-    }
-}
-
-function removerDoSlot(slot) {
-    const card = slot.querySelector(".adjetivo-card");
-    if (card) {
-        card.style.display = "flex";
-        lista.appendChild(card);
-    }
-    slot.classList.remove("filled");
-    slot.removeAttribute("data-cardId");
-
-    const textEl = slot.querySelector(".slot-text");
-    if (textEl) {
-        const pos = slot.getAttribute("data-pos");
-        if (pos === "1") textEl.textContent = "O que MAIS se parece com você";
-        else if (pos === "2") textEl.textContent = "O segundo mais parecido";
-        else if (pos === "3") textEl.textContent = "O terceiro mais parecido";
-        else if (pos === "4") textEl.textContent = "O que MENOS se parece com você";
-        textEl.style.display = "inline";
-    }
-}
-
-function devolverParaLista(card) {
-    const slotAtual = card.closest(".slot");
-    if (slotAtual) {
-        limparSlot(slotAtual);
-    } else {
-        // já estava na lista, garante exibição
-        card.style.display = "flex";
-        lista.appendChild(card);
-    }
-}
 </script>
 
 </body>

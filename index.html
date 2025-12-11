@@ -536,7 +536,7 @@ let respostas = []; // cada posição: array de 4 letras, ex: ["D","I","S","C"]
 const lista = document.getElementById("lista");
 const slots = Array.from(document.querySelectorAll(".slot"));
 
-/* ---------- FUNÇÕES DE LAYOUT / RANKING ---------- */
+/* ---------- FUNÇÕES DE RANKING ---------- */
 
 // layout atual: array de 4 posições, cada uma com card ou null
 function getCurrentLayout() {
@@ -546,14 +546,12 @@ function getCurrentLayout() {
     });
 }
 
-// aplica um layout (4 posições), respeitando exatamente 1º, 2º, 3º, 4º
+// aplica layout com possíveis buracos (nulls) – usado enquanto ainda não tem 4 itens
 function applyLayout(layout) {
-    // joga todos os cards para a lista
-    document.querySelectorAll(".adjetivo-card").forEach(card => {
-        lista.appendChild(card);
-    });
+    // joga todos os cards para lista
+    document.querySelectorAll(".adjetivo-card").forEach(card => lista.appendChild(card));
 
-    // limpa slots e recoloca de acordo com o layout
+    // limpa slots e recoloca
     slots.forEach((slot, idx) => {
         resetSlotPlaceholder(slot);
         const card = layout[idx];
@@ -567,7 +565,26 @@ function applyLayout(layout) {
     });
 }
 
-// ordem compacta (só os cards, de cima pra baixo) – usada na hora de salvar / pontuar
+// aplica ordem compacta 1º–4º (sem buraco) – usado quando já está cheio ou ao salvar/carregar
+function applyOrder(order) {
+    // devolve todos os cards para lista
+    document.querySelectorAll(".adjetivo-card").forEach(card => lista.appendChild(card));
+
+    // limpa slots
+    slots.forEach(slot => resetSlotPlaceholder(slot));
+
+    order.forEach((card, idx) => {
+        if (idx >= slots.length) return;
+        const slot = slots[idx];
+        slot.appendChild(card);
+        slot.classList.add("filled");
+        const textEl = slot.querySelector(".slot-text");
+        if (textEl) textEl.style.display = "none";
+        card.style.display = "flex";
+    });
+}
+
+// ordem compacta atual (sem buracos) – de cima pra baixo
 function getCurrentOrderCards() {
     const order = [];
     slots.forEach(slot => {
@@ -589,19 +606,29 @@ function resetSlotPlaceholder(slot) {
     slot.classList.remove("filled");
 }
 
-// insere o card exatamente na posição (0–3), respeitando 1º, 2º, 3º, 4º
+// insere o card:
+// – se ainda não completou 4 posições e o card é novo: respeita buracos (layout);
+// – se já tem 4 ou o card já estava no ranking: usa ordem compacta e reordena (efeito “trocar posição”).
 function insertCardAtIndex(card, targetIndex) {
-    let layout = getCurrentLayout();
+    const currentOrder = getCurrentOrderCards();
+    const isFull = currentOrder.length === 4;
+    const inOrder = currentOrder.includes(card);
 
-    // remove o card do layout, se já estiver em alguma posição
-    layout = layout.map(c => c === card ? null : c);
-
-    if (targetIndex < 0) targetIndex = 0;
-    if (targetIndex > layout.length - 1) targetIndex = layout.length - 1;
-
-    layout[targetIndex] = card;
-
-    applyLayout(layout);
+    if (isFull || inOrder) {
+        // reordenação com shift (ranking cheio ou card já no ranking)
+        let order = currentOrder.filter(c => c !== card);
+        if (targetIndex < 0) targetIndex = 0;
+        if (targetIndex > order.length) targetIndex = order.length;
+        order.splice(targetIndex, 0, card);
+        applyOrder(order);
+    } else {
+        // preenchimento inicial com buracos
+        let layout = getCurrentLayout().map(c => c === card ? null : c);
+        if (targetIndex < 0) targetIndex = 0;
+        if (targetIndex > layout.length - 1) targetIndex = layout.length - 1;
+        layout[targetIndex] = card;
+        applyLayout(layout);
+    }
 }
 
 // remove o card do ranking e devolve para a lista
@@ -724,18 +751,16 @@ function carregarGrupo(idx) {
 
     attachDragEventsToCards();
 
-    // se já tinha resposta salva, recarrega exatamente as posições 1º–4º
+    // se já tinha resposta salva, recarrega por ordem de perfis (compacto)
     if (respostas[idx]) {
         const ordemPerfis = respostas[idx]; // ex: ["D","I","S","C"]
         const cards = Array.from(document.querySelectorAll(".adjetivo-card"));
-        const layout = [null, null, null, null];
-
-        ordemPerfis.forEach((letra, pos) => {
+        const ordemCards = [];
+        ordemPerfis.forEach(letra => {
             const card = cards.find(c => c.dataset.profile === letra);
-            if (card) layout[pos] = card;
+            if (card) ordemCards.push(card);
         });
-
-        applyLayout(layout);
+        applyOrder(ordemCards);
     }
 
     atualizarProgresso();

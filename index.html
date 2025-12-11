@@ -300,6 +300,24 @@
         font-size: 18px;
     }
 
+    /* Fantasma do número (segue o dedo) */
+    .drag-ghost {
+        position: fixed;
+        z-index: 9999;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: #ffffff;
+        border: 1px solid #ccc;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+    }
+
     @media(max-width:768px){
         .col-itens {
             grid-template-columns: 1fr;
@@ -481,10 +499,11 @@ grupos.forEach((linha, i) => {
 });
 document.getElementById("formulario").innerHTML = html;
 
-/* --------- DRAG & DROP (DESKTOP + TOUCH) --------- */
+/* --------- DRAG & DROP (DESKTOP + TOUCH COM GHOST) --------- */
 
 let draggedChip = null;
 let draggingTouch = false;
+let ghostEl = null;
 
 // Desktop drag
 document.querySelectorAll(".numero-chip").forEach(chip => {
@@ -499,50 +518,78 @@ document.querySelectorAll(".numero-chip").forEach(chip => {
 
     // Touch start (mobile)
     chip.addEventListener("touchstart", (e) => {
+        const touch = e.touches[0];
         draggedChip = chip;
         draggingTouch = true;
         e.preventDefault(); // não abrir menus, etc.
+
+        // cria o fantasma
+        ghostEl = document.createElement("div");
+        ghostEl.className = "drag-ghost";
+        ghostEl.textContent = chip.getAttribute("data-valor");
+        document.body.appendChild(ghostEl);
+        ghostEl.style.left = touch.clientX + "px";
+        ghostEl.style.top = touch.clientY + "px";
+
+        // esconde o chip original enquanto arrasta
+        chip.style.visibility = "hidden";
     });
 });
 
-// Impede scroll enquanto estiver arrastando com o dedo
+// Impede scroll enquanto estiver arrastando com o dedo e move o ghost
 document.addEventListener("touchmove", (e) => {
-    if (draggingTouch) {
-        e.preventDefault();
-    }
+    if (!draggingTouch || !ghostEl) return;
+    e.preventDefault();
+
+    const touch = e.touches[0];
+    ghostEl.style.left = touch.clientX + "px";
+    ghostEl.style.top = touch.clientY + "px";
 }, { passive: false });
 
 // Touch end: solta o número onde o dedo parou
 document.addEventListener("touchend", (e) => {
-    if (!draggingTouch || !draggedChip) return;
-    draggingTouch = false;
+    if (!draggingTouch || !draggedChip) {
+        limparTouchEstado();
+        return;
+    }
 
     const touch = e.changedTouches[0];
     const target = document.elementFromPoint(touch.clientX, touch.clientY);
-    if (!target) {
-        draggedChip = null;
-        return;
+
+    let aplicou = false;
+
+    if (target) {
+        const dz = target.closest(".dropzone");
+        if (dz) {
+            const valor = draggedChip.getAttribute("data-valor");
+            const groupIndex = dz.getAttribute("data-group");
+            const chipGroup = draggedChip.getAttribute("data-group");
+
+            if (groupIndex === chipGroup) {
+                aplicarNumeroNoDropzone(groupIndex, dz, valor, draggedChip);
+                aplicou = true;
+            } else {
+                alert("Use apenas os números deste grupo.");
+            }
+        }
     }
 
-    const dz = target.closest(".dropzone");
-    if (!dz) {
-        draggedChip = null;
-        return;
+    // se não aplicou em lugar válido, devolve o chip
+    if (!aplicou) {
+        draggedChip.style.visibility = "visible";
     }
 
-    const valor = draggedChip.getAttribute("data-valor");
-    const groupIndex = dz.getAttribute("data-group");
-    const chipGroup = draggedChip.getAttribute("data-group");
-
-    if (groupIndex !== chipGroup) {
-        alert("Use apenas os números deste grupo.");
-        draggedChip = null;
-        return;
-    }
-
-    aplicarNumeroNoDropzone(groupIndex, dz, valor, draggedChip);
-    draggedChip = null;
+    limparTouchEstado();
 });
+
+function limparTouchEstado() {
+    draggingTouch = false;
+    draggedChip = null;
+    if (ghostEl) {
+        ghostEl.remove();
+        ghostEl = null;
+    }
+}
 
 // Dropzones (desktop drag)
 document.querySelectorAll(".dropzone").forEach(dz => {

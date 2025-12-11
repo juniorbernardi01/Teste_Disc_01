@@ -3,67 +3,94 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Ranking DISC – Grupo Premium</title>
+<title>Ranking DISC – Grupo Compacto Premium</title>
 
 <style>
     body {
         font-family: Arial, sans-serif;
         background: #f3f4f6;
-        padding: 20px;
+        padding: 12px;
     }
 
     h2, h3 {
         color: #1B4B8C;
         text-align: center;
-        margin-top: 5px;
+        margin: 4px 0;
+    }
+
+    .subtexto {
+        text-align: center;
+        font-size: 13px;
+        color: #555;
+        margin-bottom: 10px;
     }
 
     .container-ranking {
-        border: 2px solid #ccc;
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 25px;
+        border: 2px solid #1B4B8C;
+        background: #ffffff;
+        border-radius: 10px;
+        padding: 10px;
+        margin-bottom: 15px;
     }
 
     .slot {
-        background: #f7f7f7;
-        border: 2px dashed #bbb;
-        border-radius: 12px;
-        padding: 18px;
-        min-height: 70px;
-        margin-bottom: 12px;
+        background: #f5f7ff;
+        border: 2px dashed #9bb1ff;
+        border-radius: 8px;
+        padding: 8px;
+        min-height: 48px;
+        margin-bottom: 6px;
         display: flex;
         align-items: center;
-        justify-content: center;
-        color: #666;
-        font-size: 15px;
-        text-align: center;
+        justify-content: flex-start;
+        font-size: 13px;
+        color: #555;
+        box-sizing: border-box;
+    }
+
+    .slot:last-child {
+        margin-bottom: 0;
+    }
+
+    .slot-label {
+        font-weight: bold;
+        color: #1B4B8C;
+        font-size: 12px;
+        margin-right: 8px;
+        white-space: nowrap;
     }
 
     .slot.filled {
         border-style: solid;
         border-color: #1B4B8C;
-        background: #eaf1ff;
+        background: #e6edff;
         color: #1B4B8C;
         font-weight: bold;
     }
 
+    /* Lista de adjetivos */
+    .adjetivos-titulo {
+        font-size: 14px;
+        color: #1B4B8C;
+        margin: 6px 0 6px 4px;
+        font-weight: bold;
+    }
+
     .adjetivos-lista {
-        margin-top: 25px;
+        margin-top: 4px;
     }
 
     .adjetivo-card {
         background: #ffffff;
-        padding: 15px;
-        border-radius: 12px;
-        margin-bottom: 10px;
-        font-size: 16px;
+        padding: 8px 10px;
+        border-radius: 8px;
+        margin-bottom: 6px;
+        font-size: 13px;
         display: flex;
         align-items: center;
-        gap: 10px;
+        gap: 6px;
         cursor: grab;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.08);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
         transition: transform 0.1s ease;
     }
 
@@ -73,22 +100,34 @@
     }
 
     .handle {
-        font-size: 20px;
+        font-size: 18px;
         color: #333;
+        flex-shrink: 0;
     }
 
     /* Fantasma do card quando segue o dedo */
     .drag-ghost {
         position: fixed;
         z-index: 9999;
-        width: 80%;
-        padding: 15px;
+        max-width: 92%;
+        padding: 8px 10px;
         background: #ffffff;
-        border-radius: 12px;
+        border-radius: 8px;
         box-shadow: 0 5px 10px rgba(0,0,0,0.25);
         pointer-events: none;
         opacity: 0.95;
         transform: translate(-50%, -50%);
+        font-size: 13px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+    }
+
+    @media (min-width: 768px){
+        body {
+            max-width: 480px;
+            margin: 0 auto;
+        }
     }
 </style>
 </head>
@@ -96,41 +135,64 @@
 <body>
 
 <h2>Grupo 1</h2>
-<h3>Arraste para colocar em ordem:</h3>
-<h3 style="margin-top: -5px;">(do mais parecido → menos parecido)</h3>
-
-<div class="container-ranking" id="ranking">
-    <div class="slot" data-pos="1">1º Lugar – Coloque aqui o que MAIS se parece com você</div>
-    <div class="slot" data-pos="2">2º Lugar – Coloque aqui o SEGUNDO mais parecido</div>
-    <div class="slot" data-pos="3">3º Lugar – Coloque aqui o TERCEIRO mais parecido</div>
-    <div class="slot" data-pos="4">4º Lugar – Coloque aqui o que MENOS se parece com você</div>
+<div class="subtexto">
+    Arraste os adjetivos <b>de baixo</b> para as caixas <b>acima</b>.<br>
+    <b>Topo = mais parecido com você</b> &mdash; <b>Última caixa = menos parecido</b>.
 </div>
 
-<h3>Adjetivos disponíveis</h3>
+<div class="container-ranking" id="ranking">
+    <div class="slot" data-pos="1" data-placeholder="1º lugar – O que MAIS se parece com você">
+        <span class="slot-label">1º</span>
+        <span class="slot-text">O que MAIS se parece com você</span>
+    </div>
+    <div class="slot" data-pos="2" data-placeholder="2º lugar – O segundo mais parecido">
+        <span class="slot-label">2º</span>
+        <span class="slot-text">O segundo mais parecido</span>
+    </div>
+    <div class="slot" data-pos="3" data-placeholder="3º lugar – O terceiro mais parecido">
+        <span class="slot-label">3º</span>
+        <span class="slot-text">O terceiro mais parecido</span>
+    </div>
+    <div class="slot" data-pos="4" data-placeholder="4º lugar – O que MENOS se parece com você">
+        <span class="slot-label">4º</span>
+        <span class="slot-text">O que MENOS se parece com você</span>
+    </div>
+</div>
+
+<div class="adjetivos-titulo">Adjetivos disponíveis (arraste para as caixas acima):</div>
 
 <div class="adjetivos-lista" id="lista">
-    <div class="adjetivo-card" draggable="true" data-id="0"><span class="handle">☰</span>Autoconfiante / Independente / Dominante</div>
-    <div class="adjetivo-card" draggable="true" data-id="1"><span class="handle">☰</span>Comunicativo / Alegre / Extrovertido</div>
-    <div class="adjetivo-card" draggable="true" data-id="2"><span class="handle">☰</span>Acolhedor / Amigável / Paciente</div>
-    <div class="adjetivo-card" draggable="true" data-id="3"><span class="handle">☰</span>Autodisciplinado / Detalhista / Diligente</div>
+    <div class="adjetivo-card" draggable="true" data-id="0">
+        <span class="handle">☰</span>
+        <span>Autoconfiante / Independente / Dominante</span>
+    </div>
+    <div class="adjetivo-card" draggable="true" data-id="1">
+        <span class="handle">☰</span>
+        <span>Comunicativo / Alegre / Extrovertido</span>
+    </div>
+    <div class="adjetivo-card" draggable="true" data-id="2">
+        <span class="handle">☰</span>
+        <span>Acolhedor / Amigável / Paciente</span>
+    </div>
+    <div class="adjetivo-card" draggable="true" data-id="3">
+        <span class="handle">☰</span>
+        <span>Autodisciplinado / Detalhista / Diligente</span>
+    </div>
 </div>
 
 <script>
 let draggingCard = null;
 let ghost = null;
-let originList = document.getElementById("lista");
 
-/* ---------------- MOBILE DRAG (segue o dedo) ---------------- */
+/* ---------------- MOBILE: seguir o dedo ---------------- */
 
 document.querySelectorAll(".adjetivo-card").forEach(card => {
 
-    /* TOUCH START */
     card.addEventListener("touchstart", e => {
         draggingCard = card;
 
         ghost = card.cloneNode(true);
         ghost.classList.add("drag-ghost");
-        ghost.style.width = card.offsetWidth + "px";
         document.body.appendChild(ghost);
 
         card.style.opacity = "0.3";
@@ -140,7 +202,6 @@ document.querySelectorAll(".adjetivo-card").forEach(card => {
         ghost.style.top = touch.clientY + "px";
     }, { passive: true });
 
-    /* TOUCH MOVE */
     card.addEventListener("touchmove", e => {
         if (!ghost) return;
         e.preventDefault();
@@ -150,7 +211,6 @@ document.querySelectorAll(".adjetivo-card").forEach(card => {
         ghost.style.top = touch.clientY + "px";
     }, { passive: false });
 
-    /* TOUCH END */
     card.addEventListener("touchend", e => {
         if (!draggingCard) return;
 
@@ -165,13 +225,15 @@ document.querySelectorAll(".adjetivo-card").forEach(card => {
             preencherSlot(slot, draggingCard);
         }
 
-        ghost.remove();
-        ghost = null;
+        if (ghost) {
+            ghost.remove();
+            ghost = null;
+        }
         draggingCard = null;
     });
 });
 
-/* ---------------- DESKTOP DRAG ---------------- */
+/* ---------------- DESKTOP: drag & drop padrão ---------------- */
 
 document.querySelectorAll(".adjetivo-card").forEach(card => {
     card.addEventListener("dragstart", () => {
@@ -180,7 +242,7 @@ document.querySelectorAll(".adjetivo-card").forEach(card => {
     });
 
     card.addEventListener("dragend", () => {
-        draggingCard.style.opacity = "1";
+        if (draggingCard) draggingCard.style.opacity = "1";
         draggingCard = null;
     });
 });
@@ -194,21 +256,32 @@ document.querySelectorAll(".slot").forEach(slot => {
         preencherSlot(slot, draggingCard);
     });
 
+    // Clique no slot para limpar e devolver o adjetivo
     slot.addEventListener("click", () => {
-        if (slot.dataset.cardId) removerDoSlot(slot);
+        if (slot.dataset.cardId) {
+            removerDoSlot(slot);
+        }
     });
 });
 
 /* ---------------- FUNÇÕES PRINCIPAIS ---------------- */
 
 function preencherSlot(slot, card) {
-
+    // Se já tinha algo aqui, devolve pra lista
     removerDoSlot(slot);
 
-    slot.textContent = card.textContent;
+    // Marca o texto do adjetivo dentro da caixa
+    const textEl = slot.querySelector(".slot-text");
+    if (textEl) {
+        textEl.textContent = card.innerText.replace("☰", "").trim();
+    } else {
+        slot.textContent = card.innerText.replace("☰","").trim();
+    }
+
     slot.classList.add("filled");
     slot.dataset.cardId = card.dataset.id;
 
+    // Some da lista, mas sem perder referência (para poder voltar)
     card.style.display = "none";
 }
 
@@ -217,13 +290,28 @@ function removerDoSlot(slot) {
     if (!id) return;
 
     const card = document.querySelector(`.adjetivo-card[data-id="${id}"]`);
-    if (card) card.style.display = "flex";
+    if (card) {
+        card.style.display = "flex";
+    }
 
-    slot.textContent = slot.dataset.pos + "º Lugar – Coloque aqui";
+    const placeholder = slot.dataset.placeholder || "";
+    const pos = slot.getAttribute("data-pos");
+
+    const textEl = slot.querySelector(".slot-text");
+    if (textEl) {
+        // Devolve a frase padrão
+        if (pos === "1") textEl.textContent = "O que MAIS se parece com você";
+        else if (pos === "2") textEl.textContent = "O segundo mais parecido";
+        else if (pos === "3") textEl.textContent = "O terceiro mais parecido";
+        else if (pos === "4") textEl.textContent = "O que MENOS se parece com você";
+        else textEl.textContent = placeholder;
+    } else {
+        slot.textContent = placeholder || (pos + "º lugar – Coloque aqui");
+    }
+
     slot.classList.remove("filled");
     delete slot.dataset.cardId;
 }
-
 </script>
 
 </body>

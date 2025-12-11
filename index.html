@@ -342,12 +342,12 @@
 
     <div class="campo">
         <label>Telefone (WhatsApp)</label>
-        <input id="telefone" placeholder="(51) 99591-2176">
+        <input id="telefone" type="tel" placeholder="(51) 99964-1885" maxlength="16">
     </div>
 
     <div class="campo">
         <label>E-mail</label>
-        <input id="email" placeholder="exemplo@dominio.com">
+        <input id="email" type="email" placeholder="exemplo@gmail.com">
     </div>
 
     <button onclick="iniciarTeste()">IR PARA O TESTE</button>
@@ -415,6 +415,33 @@ const whatsNumero = "5551995912176";
 const EMAILJS_SERVICE_ID = "service_ir6bq6e";
 const EMAILJS_TEMPLATE_ID = "template_jta671p";
 const EMAILJS_TO = "juniorbernardi@atrius.ind.br";
+
+/* ---------- MÁSCARA DE TELEFONE ---------- */
+const telefoneInput = document.getElementById("telefone");
+if (telefoneInput) {
+    telefoneInput.addEventListener("input", function (e) {
+        let v = e.target.value.replace(/\D/g, "").substring(0,11); // até 11 dígitos
+        let f = "";
+
+        if (v.length > 0) {
+            f += "(" + v.substring(0,2);
+        }
+        if (v.length >= 3) {
+            f += ") ";
+            if (v.length <= 6) {
+                f += v.substring(2);
+            } else if (v.length === 10) {
+                // telefone fixo: (51) 3456-7890
+                f += v.substring(2,6) + "-" + v.substring(6,10);
+            } else if (v.length >= 11) {
+                // celular: (51) 99964-1885
+                f += v.substring(2,7) + "-" + v.substring(7,11);
+            }
+        }
+
+        e.target.value = f;
+    });
+}
 
 /* ---------- DADOS ---------- */
 
@@ -723,8 +750,19 @@ function iniciarTeste() {
     const telefone = document.getElementById("telefone").value.trim();
     const email = document.getElementById("email").value.trim();
 
+    const phonePattern = /^\(\d{2}\)\s?\d{4,5}-\d{4}$/;
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
     if (!nome || !telefone || !email) {
         alert("Preencha Nome, Telefone e E-mail para iniciar.");
+        return;
+    }
+    if (!phonePattern.test(telefone)) {
+        alert("Digite o telefone no formato (51) 99964-1885.");
+        return;
+    }
+    if (!emailPattern.test(email)) {
+        alert("Digite um e-mail válido, por exemplo: exemplo@gmail.com");
         return;
     }
 
@@ -765,7 +803,6 @@ function avancarOuFinalizar() {
 function voltarGrupo() {
     if (currentGrupo === 0) return;
 
-    // Se o grupo atual estiver completo, salva antes de voltar
     if (grupoCompleto()) {
         salvarRespostasDoGrupoAtual();
     }
